@@ -206,9 +206,19 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <div class="relative w-full">
-                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                        <input type="text" id="search-input" oninput="renderClients()" placeholder="Rechercher une entreprise, un secteur..." class="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm outline-none font-semibold">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="relative w-full">
+                            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                            <input type="text" id="search-input" oninput="renderClients()" placeholder="Rechercher une entreprise, un secteur..." class="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 text-sm outline-none font-semibold">
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-2">
+                            <button id="view-cards" onclick="setClientsViewMode('cards')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i>Cartes
+                            </button>
+                            <button id="view-table" onclick="setClientsViewMode('table')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">
+                                <i data-lucide="table" class="w-4 h-4"></i>Tableau
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div id="clients-container"></div>
@@ -509,6 +519,8 @@
 
         let currentCategory = 'Prospect';
         let selectedClient = null;
+        const CLIENTS_VIEW_STORAGE_KEY = 'clientsViewMode';
+        let clientsViewMode = localStorage.getItem(CLIENTS_VIEW_STORAGE_KEY) || 'cards';
 
         function formatCurrency(amount) {
             const value = Number(amount || 0);
@@ -703,6 +715,30 @@
             renderClients();
         }
 
+        function updateClientsViewToggle() {
+            const cardsBtn = document.getElementById('view-cards');
+            const tableBtn = document.getElementById('view-table');
+            if (!cardsBtn || !tableBtn) return;
+            const applyState = (btn, active) => {
+                btn.classList.toggle('bg-indigo-600', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('shadow-md', active);
+                btn.classList.toggle('bg-white', !active);
+                btn.classList.toggle('text-slate-500', !active);
+                btn.classList.toggle('border', !active);
+                btn.classList.toggle('border-slate-200', !active);
+            };
+            applyState(cardsBtn, clientsViewMode === 'cards');
+            applyState(tableBtn, clientsViewMode === 'table');
+        }
+
+        function setClientsViewMode(mode) {
+            clientsViewMode = mode === 'table' ? 'table' : 'cards';
+            localStorage.setItem(CLIENTS_VIEW_STORAGE_KEY, clientsViewMode);
+            updateClientsViewToggle();
+            renderClients();
+        }
+
         function renderClients() {
             const container = document.getElementById('clients-container');
             const search = document.getElementById('search-input').value.toLowerCase();
@@ -712,25 +748,66 @@
             document.getElementById('count-client').innerText = clients.filter(c=>c.type==='Client').length;
             document.getElementById('count-archive').innerText = clients.filter(c=>c.type==='Archivé').length;
 
+            updateClientsViewToggle();
+
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="text-center py-20 bg-white rounded-[2.5rem] border border-dashed text-slate-300 font-black italic uppercase tracking-widest text-sm">Aucun ${currentCategory.toLowerCase()} répertorié.</div>`;
                 return;
             }
 
-            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">${filtered.map(c => `
-                <div onclick="openDrawer('${c.id}')" class="group bg-white rounded-[2.5rem] border-t-8 shadow-sm hover:shadow-2xl transition-all cursor-pointer p-8 ${getStatusTagClass(c.status).replace('status-','border-')}">
-                    <div class="flex justify-between items-start mb-6">
-                        <div><h4 class="font-black text-slate-800 text-lg tracking-tight group-hover:text-indigo-600 transition-colors">${c.company}</h4><p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">${c.sector}</p></div>
-                        <span class="text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 border border-slate-100 uppercase tracking-widest">${c.status}</span>
+            if (clientsViewMode === 'table') {
+                container.innerHTML = `
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden animate-fadeIn">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                                    <tr>
+                                        <th class="text-left px-6 py-4">Entreprise</th>
+                                        <th class="text-left px-6 py-4">Secteur</th>
+                                        <th class="text-left px-6 py-4">Statut</th>
+                                        <th class="text-right px-6 py-4">CA Réalisé</th>
+                                        <th class="text-right px-6 py-4">CA à venir</th>
+                                        <th class="text-center px-6 py-4">Contacts</th>
+                                        <th class="text-right px-6 py-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${filtered.map(c => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="px-6 py-4 font-black text-slate-800">${c.company}</td>
+                                            <td class="px-6 py-4 text-slate-500">${c.sector || '-'}</td>
+                                            <td class="px-6 py-4">
+                                                <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white ${getStatusTagClass(c.status)}">${c.status}</span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-black text-indigo-600">${Number(c.caRealise || 0).toLocaleString()} FCFA</td>
+                                            <td class="px-6 py-4 text-right font-black text-amber-600">${Number(c.caPotentiel || 0).toLocaleString()} FCFA</td>
+                                            <td class="px-6 py-4 text-center text-slate-500 font-bold">${c.contacts.length}</td>
+                                            <td class="px-6 py-4 text-right">
+                                                <button onclick="openDrawer('${c.id}')" class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50">Ouvrir</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <div class="bg-indigo-50/50 p-4 rounded-3xl"><p class="text-[9px] text-indigo-400 uppercase font-black tracking-tighter mb-1">Encaissé</p><p class="text-sm font-black text-indigo-700">${Number(c.caRealise || 0).toLocaleString()} FCFA</p></div>
-                        <div class="bg-amber-50/50 p-4 rounded-3xl"><p class="text-[9px] text-amber-400 uppercase font-black tracking-tighter mb-1">Pipeline</p><p class="text-sm font-black text-amber-700">${Number(c.caPotentiel || 0).toLocaleString()} FCFA</p></div>
-                    </div>
-                    <div class="flex justify-between items-center pt-5 border-t border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-400 transition-colors">
-                        <span>${c.contacts.length} collaborateurs</span><i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                </div>`).join('')}</div>`;
+                `;
+            } else {
+                container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">${filtered.map(c => `
+                    <div onclick="openDrawer('${c.id}')" class="group bg-white rounded-[2.5rem] border-t-8 shadow-sm hover:shadow-2xl transition-all cursor-pointer p-8 ${getStatusTagClass(c.status).replace('status-','border-')}">
+                        <div class="flex justify-between items-start mb-6">
+                            <div><h4 class="font-black text-slate-800 text-lg tracking-tight group-hover:text-indigo-600 transition-colors">${c.company}</h4><p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">${c.sector}</p></div>
+                            <span class="text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 border border-slate-100 uppercase tracking-widest">${c.status}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div class="bg-indigo-50/50 p-4 rounded-3xl"><p class="text-[9px] text-indigo-400 uppercase font-black tracking-tighter mb-1">Encaissé</p><p class="text-sm font-black text-indigo-700">${Number(c.caRealise || 0).toLocaleString()} FCFA</p></div>
+                            <div class="bg-amber-50/50 p-4 rounded-3xl"><p class="text-[9px] text-amber-400 uppercase font-black tracking-tighter mb-1">Pipeline</p><p class="text-sm font-black text-amber-700">${Number(c.caPotentiel || 0).toLocaleString()} FCFA</p></div>
+                        </div>
+                        <div class="flex justify-between items-center pt-5 border-t border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-400 transition-colors">
+                            <span>${c.contacts.length} collaborateurs</span><i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>`).join('')}</div>`;
+            }
             lucide.createIcons();
         }
 
@@ -1346,6 +1423,7 @@
         window.showPage = showPage;
         window.toggleSidebar = toggleSidebar;
         window.setCategory = setCategory;
+        window.setClientsViewMode = setClientsViewMode;
         window.openNewProspectModal = openNewProspectModal;
         window.openContactModal = openContactModal;
         window.closeContactModal = closeContactModal;
