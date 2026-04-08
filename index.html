@@ -96,14 +96,40 @@
                     </button>
                 </nav>
             </div>
-            <div class="mt-auto p-8">
-                <div class="bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100">
+            <div class="mt-auto p-8 relative">
+                <div id="user-menu" class="hidden absolute bottom-24 left-8 right-8 z-50">
+                    <div class="bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+                        <div class="px-4 py-3 text-[11px] font-bold text-slate-300 border-b border-slate-800 truncate">turibe@talaai2.onmicrosoft.com</div>
+                        <button class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-slate-800 transition-all">
+                            <span class="flex items-center gap-3"><i data-lucide="settings" class="w-4 h-4"></i>Paramètres</span>
+                            <span class="text-slate-500 text-xs">⌘+Ctrl+P</span>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-slate-800 transition-all">
+                            <span class="flex items-center gap-3"><i data-lucide="globe" class="w-4 h-4"></i>Langue</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                        </button>
+                        <button class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-slate-800 transition-all">
+                            <span class="flex items-center gap-3"><i data-lucide="help-circle" class="w-4 h-4"></i>Obtenir de l'aide</span>
+                        </button>
+                        <div class="border-t border-slate-800"></div>
+                        <button class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-slate-800 transition-all">
+                            <span class="flex items-center gap-3"><i data-lucide="info" class="w-4 h-4"></i>En savoir plus</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                        </button>
+                        <div class="border-t border-slate-800"></div>
+                        <button class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-rose-400 hover:bg-slate-800 transition-all">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>Se déconnecter
+                        </button>
+                    </div>
+                </div>
+                <button id="user-menu-trigger" onclick="toggleUserMenu(event)" class="w-full bg-slate-50 p-4 rounded-2xl flex items-center gap-3 border border-slate-100 hover:bg-slate-100 transition-all">
                     <div class="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center text-amber-800 font-bold text-xs uppercase">AD</div>
-                    <div class="overflow-hidden">
+                    <div class="overflow-hidden text-left">
                         <p class="text-sm font-bold truncate">Awa Diop</p>
                         <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">Admin</p>
                     </div>
-                </div>
+                    <i data-lucide="chevron-up" class="w-4 h-4 text-slate-400 ml-auto"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -651,6 +677,21 @@
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function toggleUserMenu(event) {
+            event?.stopPropagation?.();
+            const menu = document.getElementById('user-menu');
+            if (!menu) return;
+            menu.classList.toggle('hidden');
+            lucide.createIcons();
+        }
+
+        function closeUserMenu() {
+            const menu = document.getElementById('user-menu');
+            if (menu && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+            }
+        }
 
         // --- DASHBOARD RENDER ---
         function updateDashboard() {
@@ -1422,6 +1463,8 @@
 
         window.showPage = showPage;
         window.toggleSidebar = toggleSidebar;
+        window.toggleUserMenu = toggleUserMenu;
+        window.closeUserMenu = closeUserMenu;
         window.setCategory = setCategory;
         window.setClientsViewMode = setClientsViewMode;
         window.openNewProspectModal = openNewProspectModal;
@@ -1459,6 +1502,7 @@
         window.saveProspect = saveProspect;
 
         window.onload = () => { showPage('dashboard'); };
+        window.addEventListener('click', closeUserMenu);
     </script>
 </body>
 </html>
